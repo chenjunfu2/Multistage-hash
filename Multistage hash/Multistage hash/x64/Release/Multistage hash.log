@@ -1,0 +1,7 @@
+﻿  Multistage hash.cpp
+E:\Multistage hash\Multistage hash\Multistage hash.h(177,43): warning C4244: “参数”: 从“double”转换到“unsigned long”，可能丢失数据
+  Previous IPDB not found, fall back to full compilation.
+  正在生成代码
+  All 8 functions were compiled because no usable IPDB/IOBJ from previous compilation was found.
+  已完成代码的生成
+  Multistage hash.vcxproj -> E:\Multistage hash\x64\Release\Multistage hash.exe

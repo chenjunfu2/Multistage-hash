@@ -1,0 +1,4 @@
+﻿  Multistage hash.cpp
+E:\Multistage hash\Multistage hash\Multistage hash.cpp(28,31): warning C4244: “参数”: 从“ULONGLONG”转换到“long double”，可能丢失数据
+E:\Multistage hash\Multistage hash\Multistage hash.cpp(28,23): warning C4244: “初始化”: 从“long double”转换到“ULONGLONG”，可能丢失数据
+  Multistage hash.vcxproj -> E:\Multistage hash\x64\Debug\Multistage hash.exe
