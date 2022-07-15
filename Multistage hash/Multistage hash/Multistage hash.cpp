@@ -1,24 +1,14 @@
-﻿#include <string.h>
-#include <math.h>
-#include "Multistage hash.h"
+﻿#include "Multistage hash.h"//class state
+#include <string.h>//using memset function
+#include <math.h>//using sqrt function
 
 #define IfThrow(index) if(!index) throw(index);
 #define ZEROMEMORY(mem, size) memset(mem, 0, size)
 #define NULL 0
 
-//double my_sqrt(double x)
-//{
-//	register double ret;
-//	_asm
-//	{
-//		//fsqrt
-//		//=t ret
-//		//0 x
-//	}
-//
-//}
-
 /*质数操作函数*/
+
+//质数判定
 _BOOL inline MultistageHash::IsPrimeNum(ULONGLONG n)
 {
 	if (n <= 3)
@@ -32,6 +22,8 @@ _BOOL inline MultistageHash::IsPrimeNum(ULONGLONG n)
 	return true;
 }
 
+
+//查找最近的质数
 ULONGLONG inline MultistageHash::FindNearPrimeNum(ULONGLONG n, ULONGLONG l)
 {
 	ULONGLONG i = 0;
@@ -45,25 +37,43 @@ ULONGLONG inline MultistageHash::FindNearPrimeNum(ULONGLONG n, ULONGLONG l)
 	}
 
 }
-/*统计数据反馈函数*/
-_BOOL MultistageHash::GetOrderUseRate(TraversalUseRateFunc fTraversalUseRate)
-{
-	_BOOL b = true;
-	for (ULONG i = 0; i < ulOrderTable && b; ++i)
-	{
-		b = fTraversalUseRate(pstOrderTable[i].ullOrderElement, pstOrderTable[i].ullUseOrderElement, i);
-	}
 
-	return b;
+/*统计数据反馈函数*/
+
+//获取层数
+ULONG MultistageHash::GetOrderTableLayers(VOID)
+{
+	return ulOrderTable;
 }
 
-_BOOL MultistageHash::GetTotalUseRate(TraversalUseRateFunc fTraversalUseRate)
+//获取整张表最大可容纳元素数
+ULONGLONG MultistageHash::GetTotalElement(VOID)
 {
-	return fTraversalUseRate(ullTotalElement, ullUseTotalElement, ulOrderTable);
+	return ullTotalElement;
+}
+
+//获取整张表已容纳元素数
+ULONGLONG MultistageHash::GetUseTotalElement(VOID)
+{
+	return ullUseTotalElement;
+}
+
+//获取某一层最大可容纳元素数
+ULONGLONG MultistageHash::GetOrderElement(ULONG ulLayer)
+{
+	return pstOrderTable[ulLayer].ullOrderElement;
+}
+
+//获取某一层已容纳元素数
+ULONGLONG MultistageHash::GetUseOrderElement(ULONG ulLayer)
+{
+	return pstOrderTable[ulLayer].ullUseOrderElement;
 }
 
 /*多阶哈希辅助函数*/
-MultistageHash::ELEMENTADDR inline MultistageHash::FindElementDataIsInTheTableAndReturnEmpty(ULONGLONG ullKeyMap, ULONGLONG ullKey)
+
+//查找一个键是否存在于哈希表中如果不存在则返回第一个空位
+MultistageHash::ELEMENTADDR inline MultistageHash::FindElementDataIsInTheTableOrReturnFirstEmpty(ULONGLONG ullKeyMap, ULONGLONG ullKey)
 {
 	ELEMENTADDR stElementAddr = { 0 };
 
@@ -123,7 +133,9 @@ MultistageHash::ELEMENTADDR inline MultistageHash::FindElementDataIsInTheTable(U
 
 
 
-/*多阶哈希操作函数*/
+/*初始化和反向初始化*/
+
+//初始化(构造函数)
 MultistageHash::MultistageHash(ULONGLONG _ulStartElement, ULONG _ulOrder, MultiplicationFunc _fMultiplication,
 	AllocateMemoryFunc _fAllocateMemory, ReleaseMemoryFunc _fReleaseMemory, HashKeyMapFunc _fHashKeyMap) :
 	ulOrderTable(_ulOrder), fReleaseMemory(_fReleaseMemory), fHashKeyMap(_fHashKeyMap)
@@ -172,12 +184,14 @@ MultistageHash::MultistageHash(ULONGLONG _ulStartElement, ULONG _ulOrder, Multip
 	return;
 }
 
-
-MultistageHash::~MultistageHash()
+//删除(析构函数)
+MultistageHash::~MultistageHash(VOID)
 {
 	fReleaseMemory(pstOrderTable);
 	pstOrderTable = NULL;
 }
+
+/*多阶哈希操作函数*/
 
 //添加一个键值对
 _BOOL MultistageHash::AddMultiHash(ULONGLONG ullKey, VOID* pData)
@@ -185,7 +199,7 @@ _BOOL MultistageHash::AddMultiHash(ULONGLONG ullKey, VOID* pData)
 	if (!pData)
 		return false;
 	
-	ELEMENTADDR stElementAddr = FindElementDataIsInTheTableAndReturnEmpty(fHashKeyMap(ullKey), ullKey);//查找数据是否存在
+	ELEMENTADDR stElementAddr = FindElementDataIsInTheTableOrReturnFirstEmpty(fHashKeyMap(ullKey), ullKey);//查找数据是否存在
 
 	if (!stElementAddr.pstOrderElement)//表内无空间
 	{
@@ -259,7 +273,7 @@ _BOOL MultistageHash::ModifyMultiHashKey(ULONGLONG ullSourceKey, ULONGLONG ullMo
 		return false;//修改失败
 	}
 
-	ELEMENTADDR stModifyElementAddr = FindElementDataIsInTheTableAndReturnEmpty(fHashKeyMap(ullModifyKey), ullModifyKey);//找出目标位置
+	ELEMENTADDR stModifyElementAddr = FindElementDataIsInTheTableOrReturnFirstEmpty(fHashKeyMap(ullModifyKey), ullModifyKey);//找出目标位置
 
 	if (!stModifyElementAddr.pstOrderElement || stModifyElementAddr.pstOrderElement->pData)//没找到或已有数据
 	{
@@ -280,8 +294,6 @@ _BOOL MultistageHash::ModifyMultiHashKey(ULONGLONG ullSourceKey, ULONGLONG ullMo
 
 
 //查找一个键值对（只能通过键查找值）
-//输入一个键和查找的键值索引结构体指针（为null不返回）
-//返回查找元素的值（为null则代表失败）
 _BOOL MultistageHash::FindMultiHashData(ULONGLONG ullKey, VOID** ppReturnData)
 {
 	if (!ppReturnData)
@@ -303,26 +315,47 @@ _BOOL MultistageHash::FindMultiHashData(ULONGLONG ullKey, VOID** ppReturnData)
 
 
 //交换两个键值对下的值（只交换值不交换键）
-//输入两个键或两个键值索引结构指针和一个元素结构（返回第一个元素结构）
-//返回第二个元素结构
+_BOOL MultistageHash::SwapMultiHashData(ULONGLONG ullKey1, ULONGLONG ullKey2)
+{
+	ELEMENTADDR stElementAddr1 = FindElementDataIsInTheTable(fHashKeyMap(ullKey1), ullKey1);
+	if (!stElementAddr1.pstOrderElement)
+	{
+		return false;
+	}
+	ELEMENTADDR stElementAddr2 = FindElementDataIsInTheTable(fHashKeyMap(ullKey2), ullKey2);
+	if (!stElementAddr2.pstOrderElement)
+	{
+		return false;
+	}
 
+	register void* rpDataTemp = stElementAddr1.pstOrderElement->pData;
+	stElementAddr1.pstOrderElement->pData = stElementAddr2.pstOrderElement->pData;
+	stElementAddr2.pstOrderElement->pData = rpDataTemp;
 
+	return true;
+}
 
+//获取所有键值对的迭代器
+MultistageHash::PELEMENTDATA MultistageHash::begin(VOID)
+{
+	return pstOrderTable[0].pstOrderElement;
+}
 
+MultistageHash::PELEMENTDATA MultistageHash::end(VOID)
+{
+	return pstOrderTable[ulOrderTable].pstOrderElement + pstOrderTable[ulOrderTable].ullOrderElement + 1;
+}
 
-
-
-
-//获取所有已使用键值对（用所有键值对做参调用给定函数）(分为正向遍历和反向遍历)
-//输入一个函数指针和一个正向/方向遍历的布尔值，对于每个键值对都调用函数（多次调用的函数一旦返回false立刻结束调用并返回）
-//返回一个布尔值，如果多次调用函数返回false就返回false，否则全部遍历完成返回true
-
-
-
-
-
-
-
+//清空整张表数据
+VOID MultistageHash::EmptyMultiHash(VOID)
+{
+	for (ULONG i = 0; i < ulOrderTable; ++i)
+	{
+		ZEROMEMORY(pstOrderTable[i].pstOrderElement, pstOrderTable[i].ullOrderElement * sizeof(ELEMENTDATA));//清空表元素
+		pstOrderTable[i].ullUseOrderElement = 0ULL;
+	}
+	return;
+}
 
 #undef NULL
 #undef ZEROMEMORY
